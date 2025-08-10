@@ -4,12 +4,12 @@ A distributed real-time system that streams live stock market data, processes tr
 
 ##  Features
 
-- ** Live Stock Data** - Real-time price streaming from Yahoo Finance
-- ** AI Predictions** - Machine learning price forecasting with confidence scores
-- ** Price Alerts** - Custom threshold notifications via Telegram
-- ** Interactive Dashboard** - Real-time web interface with live updates
-- ** RESTful API** - Complete CRUD operations with auto-documentation
-- ** WebSocket Streaming** - Instant data broadcasting to all connected clients
+-  **Live Stock Data** - Real-time price streaming from Yahoo Finance
+-  **AI Predictions** - Machine learning price forecasting with confidence scores
+-  **Price Alerts** - Custom threshold notifications via Telegram
+-  **Interactive Dashboard** - Real-time web interface with live updates
+-  **RESTful API** - Complete CRUD operations with auto-documentation
+-  **WebSocket Streamin**g - Instant data broadcasting to all connected clients
 
 ## 🛠 Tech Stack (100% Free)
 
@@ -220,7 +220,3 @@ redis-cli ping
 - [ ] Risk management tools
 
 ---
-
-**⭐ Star this repository if it helped you!**
-
-Built with ❤️ using 100% free and open-source technologies.
