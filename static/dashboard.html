@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Real-Time Stock Trading Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --card-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --success: #4CAF50;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --info: #2196F3;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.8s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--card-border);
+        }
+        
+        .header h1 {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #e1f5fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .status.connected { 
+            background: rgba(76, 175, 80, 0.3); 
+            color: #4CAF50;
+        }
+        
+        .status.disconnected { 
+            background: rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+        
+        .status.reconnecting {
+            background: rgba(255, 152, 0, 0.3);
+            color: #ff9800;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid var(--card-border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--success), var(--info), var(--warning));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .card:hover::before {
+            opacity: 1;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .card h3 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h3 i {
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .stock-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateX(5px);
+            border-left-color: var(--info);
+        }
+        
+        .stock-symbol {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: var(--text-primary);
+        }
+        
+        .stock-meta {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        .stock-price {
+            text-align: right;
+        }
+        
+        .price-main {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        
+        .price-change {
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: flex-end;
+            margin-top: 2px;
+        }
+        
+        .positive { color: var(--success); }
+        .negative { color: var(--danger); }
+        .neutral { color: var(--text-secondary); }
+        
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .prediction-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .prediction-left {
+            flex: 1;
+        }
+        
+        .prediction-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        
+        .confidence-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .confidence-bar {
+            width: 80px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 3px;
+        }
+        
+        .confidence-text {
+            font-size: 0.85em;
+            font-weight: 600;
+            min-width: 35px;
+        }
+        
+        .alert-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 100px 80px;
+            gap: 12px;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .alert-form input, 
+        .alert-form select, 
+        .alert-form button {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .alert-form input:focus,
+        .alert-form select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 0 2px var(--info);
+        }
+        
+        .alert-form input::placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .alert-form button {
+            background: var(--success);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .alert-form button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .alert-form button:active {
+            transform: translateY(0);
+        }
+        
+        .alert-items {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        
+        .alert-items::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .alert-items::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        .alert-items::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+        
+        .remove-btn {
+            background: var(--danger) !important;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+        }
+        
+        .remove-btn:hover {
+            background: #d32f2f !important;
+            transform: scale(1.1);
+        }
+        
+        .log {
+            max-height: 250px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85em;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .log::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        .log::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        
+        .log-entry {
+            margin: 4px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            animation: slideInRight 0.3s ease;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .log-entry.error {
+            color: var(--danger);
+        }
+        
+        .log-entry.success {
+            color: var(--success);
+        }
+        
+        .log-entry.warning {
+            color: var(--warning);
+        }
+        
+        .timestamp {
+            color: var(--text-secondary);
+            font-size: 0.75em;
+            margin-right: 8px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--text-primary);
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+        }
+        
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            font-size: 0.8em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            padding: 15px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+        
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+        
+        .toast.warning {
+            border-left: 4px solid var(--warning);
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .alert-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-stats {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .header {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Real-Time Stock Dashboard</h1>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <i class="fas fa-wifi"></i>
+                    <span class="status" id="connectionStatus">🔴 Disconnected</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="lastUpdate">Never</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-users"></i>
+                    <span id="activeUsers">0 users</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-database"></i>
+                    <span id="totalSymbols">0 symbols</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Live Stock Prices -->
+            <div class="card">
+                <h3><i class="fas fa-chart-line"></i> Live Stock Prices</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalGainers">0</div>
+                        <div class="metric-label">Gainers</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="totalLosers">0</div>
+                        <div class="metric-label">Losers</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="avgChange">0%</div>
+                        <div class="metric-label">Avg Change</div>
+                    </div>
+                </div>
+                <div id="stockList">
+                    <div class="empty-state">
+                        <i class="fas fa-chart-line"></i>
+                        <div>Waiting for live stock data...</div>
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Predictions -->
+            <div class="card">
+                <h3><i class="fas fa-robot"></i> AI Predictions</h3>
+                <div id="predictionList">
+                    <div class="empty-state">
+                        <i class="fas fa-brain"></i>
+                        <div>Generating AI predictions...</div>
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Price Alerts -->
+            <div class="card">
+                <h3><i class="fas fa-bell"></i> Price Alerts</h3>
+                <div class="alert-items" id="alertList">
+                    <!-- Active alerts will be populated here -->
+                </div>
+                <div class="alert-form">
+                    <input type="text" id="alertSymbol" placeholder="Symbol (e.g., AAPL)" maxlength="10">
+                    <input type="number" id="alertPrice" placeholder="Target Price" step="0.01" min="0">
+                    <select id="alertCondition">
+                        <option value="above">Above</option>
+                        <option value="below">Below</option>
+                    </select>
+                    <button onclick="createAlert()" type="button">
+                        <i class="fas fa-plus"></i> Add
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Activity Log -->
+            <div class="card">
+                <h3><i class="fas fa-list"></i> Activity Log</h3>
+                <div class="log" id="activityLog">
+                    <!-- Activity entries will be populated here -->
+                </div>
+                <div style="margin-top: 10px; text-align: center;">
+                    <button onclick="clearLog()" style="background: var(--warning); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-trash"></i> Clear Log
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer"></div>
+
+    <script>
+        class StockDashboard {
+            constructor() {
+                this.ws = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                this.userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                this.stockData = new Map();
+                this.isReconnecting = false;
+                
+                this.initWebSocket();
+                this.loadInitialData();
+                this.startHeartbeat();
+            }
+            
+            initWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws`;
+                
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        this.updateConnectionStatus('connected');
+                        this.reconnectAttempts = 0;
+                        this.isReconnecting = false;
+                        this.log('🟢 Connected to real-time data stream', 'success');
+                        this.showToast('Connected successfully', 'success');
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleWebSocketMessage(data);
+                        } catch (error) {
+                            console.error('Error parsing WebSocket message:', error);
+                        }
+                    };
+                    
+                    this.ws.onclose = () => {
+                        this.updateConnectionStatus('disconnected');
+                        this.log('🔴 Disconnected from server', 'error');
+                        if (!this.isReconnecting) {
+                            this.attemptReconnect();
+                        }
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.log(' Connection error occurred', 'error');
+                    };
+                    
+                } catch (error) {
+                    console.error('Failed to create WebSocket:', error);
+                    this.updateConnectionStatus('disconnected');
+                    this.log(' Failed to initialize WebSocket connection', 'error');
+                }
+            }
+            
+            attemptReconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts && !this.isReconnecting) {
+                    this.isReconnecting = true;
+                    this.reconnectAttempts++;
+                    const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+                    
+                    this.updateConnectionStatus('reconnecting');
+                    this.log(` Reconnecting in ${delay/1000}s... (attempt ${this.reconnectAttempts})`, 'warning');
+                    
+                    setTimeout(() => {
+                        this.initWebSocket();
+                    }, delay);
+                } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    this.log(' Max reconnection attempts reached. Please refresh the page.', 'error');
+                    this.showToast('Connection failed. Please refresh the page.', 'error');
+                }
+            }
+            
+            startHeartbeat() {
+                setInterval(() => {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({type: 'heartbeat', timestamp: Date.now()}));
+                    }
+                }, 30000); // Send heartbeat every 30 seconds
+            }
+            
+            updateConnectionStatus(status) {
+                const statusElement = document.getElementById('connectionStatus');
+                const icons = {
+                    'connected': '🟢 Connected',
+                    'disconnected': '🔴 Disconnected', 
+                    'reconnecting': '🟡 Reconnecting...'
+                };
+                
+                statusElement.textContent = icons[status];
+                statusElement.className = `status ${status}`;
+            }
+            
+            handleWebSocketMessage(data) {
+                switch (data.type) {
+                    case 'stock_update':
+                        this.updateStockPrice(data.data);
+                        break;
+                    case 'predictions':
+                        this.updatePredictions(data.data);
+                        break;
+                    case 'alert_triggered':
+                        this.handleAlertTriggered(data.data);
+                        break;
+                    case 'system_stats':
+                        this.updateSystemStats(data.data);
+                        break;
+                    case 'echo':
+                        // Handle echo response
+                        break;
+                    default:
+                        console.log('Unknown message type:', data.type);
+                }
+                
+                this.updateLastUpdateTime();
+            }
+            
+            updateStockPrice(stockData) {
+                this.stockData.set(stockData.symbol, stockData);
+                
+                const stockList = document.getElementById('stockList');
+                let existingItem = document.getElementById(`stock-${stockData.symbol}`);
+                
+                const changeClass = stockData.change_percent >= 0 ? 'positive' : 
+                                  stockData.change_percent < 0 ? 'negative' : 'neutral';
+                const changeIcon = stockData.change_percent > 0 ? 'fa-arrow-up' : 
+                                 stockData.change_percent < 0 ? 'fa-arrow-down' : 'fa-minus';
+                
+                const stockHTML = `
+                    <div class="stock-left">
+                        <div class="stock-symbol">${stockData.symbol}</div>
+                        <div class="stock-meta">Vol: ${this.formatVolume(stockData.volume)}</div>
+                    </div>
+                    <div class="stock-price">
+                        <div class="price-main">$${stockData.price.toFixed(2)}</div>
+                        <div class="price-change ${changeClass}">
+                            <i class="fas ${changeIcon}"></i>
+                            ${Math.abs(stockData.change_percent).toFixed(2)}%
+                        </div>
+                    </div>
+                `;
+                
+                if (existingItem) {
+                    existingItem.innerHTML = stockHTML;
+                    // Add flash animation for updates
+                    existingItem.style.background = 'rgba(255, 255, 255, 0.2)';
+                    setTimeout(() => {
+                        existingItem.style.background = 'rgba(255, 255, 255, 0.08)';
+                    }, 300);
+                } else {
+                    // Remove empty state if it exists
+                    const emptyState = stockList.querySelector('.empty-state');
+                    if (emptyState) {
+                        emptyState.remove();
+                    }
+                    
+                    const stockItem = document.createElement('div');
+                    stockItem.className = 'stock-item';
+                    stockItem.id = `stock-${stockData.symbol}`;
+                    stockItem.innerHTML = stockHTML;
+                    stockList.appendChild(stockItem);
+                }
+                
+                this.updateMarketMetrics();
+                this.log(` ${stockData.symbol}: ${stockData.price.toFixed(2)} (${stockData.change_percent > 0 ? '+' : ''}${stockData.change_percent.toFixed(2)}%)`);
+            }
+            
+            updateMarketMetrics() {
+                const stocks = Array.from(this.stockData.values());
+                if (stocks.length === 0) return;
+                
+                const gainers = stocks.filter(s => s.change_percent > 0).length;
+                const losers = stocks.filter(s => s.change_percent < 0).length;
+                const avgChange = stocks.reduce((sum, s) => sum + s.change_percent, 0) / stocks.length;
+                
+                document.getElementById('totalGainers').textContent = gainers;
+                document.getElementById('totalLosers').textContent = losers;
+                document.getElementById('avgChange').textContent = `${avgChange.toFixed(2)}%`;
+                document.getElementById('totalSymbols').textContent = `${stocks.length} symbols`;
+                
+                // Update gainers/losers colors
+                const gainersEl = document.getElementById('totalGainers');
+                const losersEl = document.getElementById('totalLosers');
+                gainersEl.style.color = gainers > losers ? 'var(--success)' : 'var(--text-primary)';
+                losersEl.style.color = losers > gainers ? 'var(--danger)' : 'var(--text-primary)';
+            }
+            
+            updatePredictions(predictions) {
+                const predictionList = document.getElementById('predictionList');
+                
+                // Remove empty state
+                const emptyState = predictionList.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+                
+                predictionList.innerHTML = '';
+                
+                if (predictions.length === 0) {
+                    predictionList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-robot"></i>
+                            <div>No predictions available</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                predictions.forEach(pred => {
+                    if (!pred) return;
+                    
+                    const currentStock = this.stockData.get(pred.symbol);
+                    const currentPrice = currentStock ? currentStock.price : 0;
+                    const priceDiff = currentPrice > 0 ? pred.predicted_price - currentPrice : 0;
+                    const priceDiffPercent = currentPrice > 0 ? (priceDiff / currentPrice) * 100 : 0;
+                    
+                    const predictionItem = document.createElement('div');
+                    predictionItem.className = 'prediction-item';
+                    
+                    const confidenceColor = pred.confidence > 0.7 ? 'var(--success)' : 
+                                          pred.confidence > 0.5 ? 'var(--warning)' : 'var(--danger)';
+                    
+                    predictionItem.innerHTML = `
+                        <div class="prediction-left">
+                            <div class="stock-symbol">${pred.symbol}</div>
+                            <div class="stock-meta">
+                                Predicted: ${pred.predicted_price.toFixed(2)}
+                                ${priceDiff !== 0 ? `(${priceDiff > 0 ? '+' : ''}${priceDiffPercent.toFixed(1)}%)` : ''}
+                            </div>
+                        </div>
+                        <div class="prediction-right">
+                            <div class="confidence-container">
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${pred.confidence * 100}%"></div>
+                                </div>
+                                <div class="confidence-text" style="color: ${confidenceColor}">
+                                    ${(pred.confidence * 100).toFixed(0)}%
+                                </div>
+                            </div>
+                            <div class="stock-meta">${pred.prediction_horizon}</div>
+                        </div>
+                    `;
+                    
+                    predictionList.appendChild(predictionItem);
+                });
+                
+                this.log(` Updated ${predictions.length} AI predictions`, 'success');
+            }
+            
+            handleAlertTriggered(alertData) {
+                this.log(` ALERT TRIGGERED: ${alertData.symbol} hit ${alertData.price}`, 'warning');
+                this.showToast(` Price Alert: ${alertData.symbol} reached ${alertData.price}!`, 'warning');
+                
+                // Browser notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(`Price Alert: ${alertData.symbol}`, {
+                        body: `Target price ${alertData.price} reached!`,
+                        icon: '/favicon.ico',
+                        tag: 'price-alert'
+                    });
+                }
+                
+                // Reload alerts to show updated status
+                setTimeout(() => this.loadUserAlerts(), 1000);
+            }
+            
+            updateSystemStats(stats) {
+                if (stats.active_users !== undefined) {
+                    document.getElementById('activeUsers').textContent = `${stats.active_users} users`;
+                }
+            }
+            
+            updateLastUpdateTime() {
+                const now = new Date();
+                document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+            }
+            
+            formatVolume(volume) {
+                if (volume >= 1000000) {
+                    return (volume / 1000000).toFixed(1) + 'M';
+                } else if (volume >= 1000) {
+                    return (volume / 1000).toFixed(1) + 'K';
+                }
+                return volume.toString();
+            }
+            
+            async loadInitialData() {
+                try {
+                    this.log(' Loading initial data...', 'info');
+                    
+                    // Load current stock prices
+                    const stockResponse = await fetch('/api/stocks');
+                    if (stockResponse.ok) {
+                        const stocks = await stockResponse.json();
+                        stocks.forEach(stock => this.updateStockPrice(stock));
+                    }
+                    
+                    // Load predictions
+                    const predResponse = await fetch('/api/predictions');
+                    if (predResponse.ok) {
+                        const data = await predResponse.json();
+                        if (data.predictions) {
+                            this.updatePredictions(data.predictions);
+                        }
+                    }
+                    
+                    // Load user alerts
+                    await this.loadUserAlerts();
+                    
+                    this.log(' Initial data loaded successfully', 'success');
+                    
+                } catch (error) {
+                    console.error('Error loading initial data:', error);
+                    this.log(' Error loading initial data', 'error');
+                    this.showToast('Failed to load initial data', 'error');
+                }
+            }
+            
+            async loadUserAlerts() {
+                try {
+                    const response = await fetch(`/api/alerts/${this.userId}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.displayAlerts(data.alerts || []);
+                    }
+                } catch (error) {
+                    console.error('Error loading alerts:', error);
+                    this.log(' Failed to load alerts', 'warning');
+                }
+            }
+            
+            displayAlerts(alerts) {
+                const alertList = document.getElementById('alertList');
+                alertList.innerHTML = '';
+                
+                if (alerts.length === 0) {
+                    alertList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-bell-slash"></i>
+                            <div>No active alerts</div>
+                            <small>Create an alert below to get notified</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                alerts.forEach(alert => {
+                    const alertItem = document.createElement('div');
+                    alertItem.className = 'stock-item';
+                    
+                    const conditionIcon = alert.condition === 'above' ? 'fa-arrow-up' : 'fa-arrow-down';
+                    const conditionColor = alert.condition === 'above' ? 'var(--success)' : 'var(--danger)';
+                    
+                    alertItem.innerHTML = `
+                        <div class="stock-left">
+                            <div class="stock-symbol">${alert.symbol}</div>
+                            <div class="stock-meta">
+                                <i class="fas ${conditionIcon}" style="color: ${conditionColor}"></i>
+                                ${alert.condition} ${alert.target_price}
+                            </div>
+                        </div>
+                        <div class="stock-price">
+                            <button class="remove-btn" onclick="dashboard.removeAlert('${alert.symbol}')" title="Remove Alert">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    alertList.appendChild(alertItem);
+                });
+            }
+            
+            async createAlert(symbol, price, condition) {
+                if (!symbol || !price) {
+                    this.showToast('Please enter both symbol and target price', 'warning');
+                    return false;
+                }
+                
+                try {
+                    this.log(` Creating alert for ${symbol}...`, 'info');
+                    
+                    const response = await fetch('/api/alerts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            symbol: symbol.toUpperCase(),
+                            target_price: parseFloat(price),
+                            condition: condition,
+                            user_id: this.userId
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        this.log(` Alert created: ${symbol} ${condition} ${price}`, 'success');
+                        this.showToast(`Alert created for ${symbol}`, 'success');
+                        await this.loadUserAlerts();
+                        return true;
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Failed to create alert');
+                    }
+                } catch (error) {
+                    console.error('Error creating alert:', error);
+                    this.log(` Failed to create alert: ${error.message}`, 'error');
+                    this.showToast('Failed to create alert', 'error');
+                    return false;
+                }
+            }
+            
+            async removeAlert(symbol) {
+                try {
+                    this.log(` Removing alert for ${symbol}...`, 'info');
+                    
+                    const response = await fetch(`/api/alerts/${symbol}/${this.userId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        this.log(` Alert removed for ${symbol}`, 'success');
+                        this.showToast(`Alert removed for ${symbol}`, 'success');
+                        await this.loadUserAlerts();
+                    } else {
+                        throw new Error('Failed to remove alert');
+                    }
+                } catch (error) {
+                    console.error('Error removing alert:', error);
+                    this.log(` Failed to remove alert: ${error.message}`, 'error');
+                    this.showToast('Failed to remove alert', 'error');
+                }
+            }
+            
+            log(message, type = 'info') {
+                const logContainer = document.getElementById('activityLog');
+                const timestamp = new Date().toLocaleTimeString();
+                
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.innerHTML = `
+                    <span class="timestamp">${timestamp}</span>${message}
+                `;
+                
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+                
+                // Keep only last 100 entries
+                while (logContainer.children.length > 100) {
+                    logContainer.removeChild(logContainer.firstChild);
+                }
+            }
+            
+            clearLog() {
+                document.getElementById('activityLog').innerHTML = '';
+                this.log(' Activity log cleared', 'info');
+            }
+            
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                                     type === 'error' ? 'fa-exclamation-circle' : 
+                                     type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
+                container.appendChild(toast);
+                
+                // Show toast
+                setTimeout(() => toast.classList.add('show'), 100);
+                
+                // Hide and remove toast
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => container.removeChild(toast), 300);
+                }, 4000);
+            }
+        }
+        
+        // Global functions
+        async function createAlert() {
+            const symbol = document.getElementById('alertSymbol').value.trim();
+            const price = document.getElementById('alertPrice').value;
+            const condition = document.getElementById('alertCondition').value;
+            
+            if (!symbol) {
+                dashboard.showToast('Please enter a stock symbol', 'warning');
+                document.getElementById('alertSymbol').focus();
+                return;
+            }
+            
+            if (!price || parseFloat(price) <= 0) {
+                dashboard.showToast('Please enter a valid target price', 'warning');
+                document.getElementById('alertPrice').focus();
+                return;
+            }
+            
+            const success = await dashboard.createAlert(symbol, price, condition);
+            if (success) {
+                // Clear form
+                document.getElementById('alertSymbol').value = '';
+                document.getElementById('alertPrice').value = '';
+            }
+        }
+        
+        function clearLog() {
+            dashboard.clearLog();
+        }
+        
+        // Request notification permission
+        if ('Notification' in window) {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted');
+                    }
+                });
+            }
+        }
+        
+        // Initialize dashboard
+        const dashboard = new StockDashboard();
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                dashboard.log(' Page hidden - maintaining connection');
+            } else {
+                dashboard.log(' Page visible - refreshing data');
+                dashboard.loadInitialData();
+            }
+        });
+        
+        // Handle form submission with Enter key
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const target = e.target;
+                if (target.id === 'alertSymbol' || target.id === 'alertPrice') {
+                    createAlert();
+                }
+            }
+        });
+        
+        // Auto-uppercase symbol input
+        document.getElementById('alertSymbol').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase();
+        });
+        
+        // Handle window beforeunload
+        window.addEventListener('beforeunload', () => {
+            if (dashboard.ws) {
+                dashboard.ws.close();
+            }
+        });
+        
+        // Auto-refresh data every 5 minutes
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                dashboard.log(' Auto-refreshing data...', 'info');
+                dashboard.loadInitialData();
+            }
+        }, 5 * 60 * 1000);
+        
+        console.log(' Stock Dashboard initialized successfully!');
+    </script>
+</body>
+</html>
