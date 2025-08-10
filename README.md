@@ -11,7 +11,7 @@ A distributed real-time system that streams live stock market data, processes tr
 -  **RESTful API** - Complete CRUD operations with auto-documentation
 -  **WebSocket Streamin**g - Instant data broadcasting to all connected clients
 
-## 🛠 Tech Stack (100% Free)
+##  Tech Stack 
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
