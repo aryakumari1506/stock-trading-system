@@ -1,0 +1,14 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+websockets==12.0
+redis==5.0.1
+pymongo==4.6.0
+pandas==2.1.3
+numpy==1.25.2
+scikit-learn==1.3.2
+requests==2.31.0
+python-telegram-bot==20.7
+python-dotenv==1.0.0
+yfinance==0.2.24
+asyncio-mqtt==0.16.1
+aiofiles==23.2.1
