@@ -1,5 +1,3 @@
-# stock-trading-system
-
 #  Real-Time Stock Trading System
 
 A distributed real-time system that streams live stock market data, processes transactions instantly, and generates AI-powered price predictions. Built with a completely free tech stack.
